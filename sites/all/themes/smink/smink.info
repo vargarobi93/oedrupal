@@ -1,0 +1,7 @@
+name = Smink
+description = Ez egy minta smink
+core = 7.x
+
+stylesheets[all][] = layout.css
+stylesheets[all][] = system.messages.css
+stylesheets[all][] = style.css

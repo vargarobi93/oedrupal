@@ -1,0 +1,243 @@
+<?php
+
+function proba_menu() {
+  $items['film'] = array(
+    'title' => 'Filmek Page',
+    'page callback' => 'film_page',
+    'access arguments' => array('access content'),
+  );
+  $items['film/add'] = array(
+    'title' => 'Add Film',
+    'page callback' => 'film_add',
+    'access arguments' => array('access content'),
+  );
+  $items['film/%film'] = array(
+    'title' => 'Edit Film',
+    'page callback' => 'film_edit',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+  );
+  $items['nodelista'] = array(
+    'title' => 'Nodelista Page',
+    'page callback' => 'proba_nodelista',
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}
+
+function film_page() {
+  $header = array(
+      array(
+          'data' => t('Title'),
+          'field' => 'title',
+          ),
+      t('Director'),
+      t('Genre'),
+      t('Year'),
+      t('Operations'),
+  );
+  $rows = array();
+  $res = db_select('film', 'f')
+          ->extend('TableSort')
+          ->extend('PagerDefault')
+          ->fields('f')
+          ->orderByHeader($header)
+          ->limit(10)
+          ->execute();
+foreach ($res as $row){
+  $rows[] = array(
+      $row ->title,
+      $row ->director,
+      $row ->genre,
+      $row ->year,
+      l(t('Edit'), 'film/' . $row->id),
+  );
+  
+}
+  return array(
+      array(
+        '#theme' => 'pager',
+      ),
+      array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $rows,
+      ),
+      array(
+        '#theme' => 'pager',
+      ),
+  );
+}
+
+function proba_nodelista() {
+  $header = array(
+      array(
+          'data' => t('Title'),
+          'field' => 'n.title',
+          ),
+      t('Name'),
+      t('Created Time'),
+  );
+  $rows = array();
+  $select = db_select('node', 'n')
+          ->extend('TableSort')
+          ->extend('PagerDefault')
+          ->fields('n', array('nid', 'title','created'));
+  $alias = $select->leftJoin('users', 'u', 'n.uid = u.uid');
+  $res = $select->fields($alias, array('uid', 'name'))
+          ->orderByHeader($header)
+          ->limit(10)
+          ->execute();
+  foreach ($res as $row){
+    $rows[] = array(
+        l($row ->title, 'node/' . $row->nid),
+        l($row ->name, 'user/' . $row->uid),
+        format_date($row->created),
+    );
+  }
+  return array(
+      array(
+        '#theme' => 'pager',
+      ),
+      array(
+        '#theme' => 'table',
+        '#header' => $header,
+        '#rows' => $rows,
+      ),
+      array(
+        '#theme' => 'pager',
+      ),
+  );
+}
+
+function film_add() {
+  return drupal_get_form('film_add_form');
+}
+
+function film_add_form($form, &$form_state, $film = FALSE) {
+  return array(
+      'title' => array(
+          '#type' => 'textfield',
+          '#title' => t('Title'),
+          '#required' => TRUE,
+          '#default_value' => $film !== FALSE ? $film['title'] : '',
+      ),
+      'director' => array(
+          '#type' => 'textfield',
+          '#title' => t('Director'),
+          '#default_value' => $film !== FALSE ? $film['director'] : '',
+      ),
+      'genre' => array(
+          '#type' => 'textfield',
+          '#title' => t('Genre'),
+          '#default_value' => $film !== FALSE ? $film['genre'] : '',
+      ),
+      'year' => array(
+          '#type' => 'textfield',
+          '#title' => t('Year'),
+          '#default_value' => $film !== FALSE ? $film['year'] : '',
+      ),
+      'id' => array(
+          '#type' => 'hidden',
+          '#value' => $film !== FALSE ? $film['id'] : 0,
+      ),
+      'submit' => array(
+          '#type' => 'submit',
+          '#value' => $film !== FALSE ? t('Save') : t('Add'),
+      )
+  );
+}
+
+function film_add_form_validate($form, &$form_state) {
+  if (!preg_match('/^[0-9]+$/', $form_state['values']['year'])) {
+    form_set_error('year', t('Only numbers are allowed'));
+  }
+}
+
+function film_add_form_submit($form, &$form_state) {
+  if ($form_state['values']['id'] == 0) {
+    db_insert('film')
+    ->fields(array(
+      'title' => $form_state['values']['title'],
+      'director' => $form_state['values']['director'],
+      'genre' => $form_state['values']['genre'],
+      'year' => $form_state['values']['year'],
+    ))
+  ->execute();
+  }
+  else {
+    db_update('film')
+    ->fields(array(
+      'title' => $form_state['values']['title'],
+      'director' => $form_state['values']['director'],
+      'genre' => $form_state['values']['genre'],
+      'year' => $form_state['values']['year'],
+    ))
+    ->condition('id', $form_state['values']['id'])
+    ->execute();
+  }
+}      
+
+function film_load($id) {
+  $res = db_select('film', 'f')
+  ->fields('f')
+  ->condition('f.id', $id)
+  ->execute();
+  return $res->fetchAssoc();
+}
+
+function film_edit($film) {
+  return drupal_get_form('film_add_form', $film);
+}
+
+/*
+function proba_permission() {
+  return array(
+    'access proba page' => array(
+      'title' => t('Access Proba Page'),
+      'description' => t('Access My Proba module Page'),
+    ),
+  );
+}
+
+function proba_menu() {
+  $items['proba'] = array(
+    'title' => 'Example Page',
+    'page callback' => 'proba_page',
+    'access arguments' => array('access proba page'),
+  );
+  
+  $items['proba/%/alma/%proba/%'] = array(
+    'title' => 'Ez a cím, de felül lesz írva',
+    'title callback' => 'proba_title',
+    'title arguments' => array(3),
+    'page callback' => 'proba_page2',
+    'page arguments' => array(3,1,4), // proba_page2()
+    'access arguments' => array('access proba page'),
+  );
+  return $items;
+}
+
+function proba_title($tomb){
+  return t('Title @id', array('@id' => $tomb['id']));
+}
+
+function proba_load($id){
+  return array('id' => $id);
+}
+
+function proba_page() {
+  return array(
+      '#type' => 'markup',
+      '#markup' => 'Hello',
+  );
+}
+
+function proba_page2($elso, $masodik, $harmadik) {
+  dpm($elso);
+  return array(
+      '#type' => 'markup',
+      '#markup' => check_plain($masodik),
+  );
+}
+*/

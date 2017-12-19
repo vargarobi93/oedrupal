@@ -1,0 +1,103 @@
+<?php
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ * Description of ProbaTestCase
+ *
+ * @author tanulo
+ */
+class ProbaTestCase extends DrupalWebTestCase {
+  
+  public static function getInfo() {
+    return array(
+      'name' => 'Proba Test',
+      'description' => 'Ez egy teszt',
+      'group' => 'Proba',
+    );
+  }
+  
+  public function setUp() {
+    parent::setUp(array('proba'));
+    db_insert('film')
+    ->fields(array(
+      'title' => 'Vasember',
+      'director' => 'John Favreau',
+      'genre' => 'akció',
+      'year' => '2008',
+    ))
+    ->execute();
+    db_insert('film')
+    ->fields(array(
+      'title' => 'Thor',
+      'director' => 'Kenneth Branagh',
+      'genre' => 'akció',
+      'year' => '2011',
+    ))
+    ->execute();
+  }
+  
+  public function testFilmPage() {
+    $this->drupalGet('film');
+    $this->assertText('Vasember');
+    $this->assertText('Thor');
+  }
+  
+  public function testFilmAdd() {
+    $edit = array(
+      'title' => 'Amerika Kapitány',
+      'director' => 'Joe Johnston',
+      'genre' => 'akció',
+      'year' => '2011',
+    );
+    $this->drupalPost('film/add', $edit, t('Add'));
+    $this->drupalGet('film');
+    $this->assertText('Amerika Kapitány');
+  }
+  
+  public function testFilmEdit() {
+    $edit = array(
+      'title' => 'Hulk',
+      'director' => 'Ang Lee',
+      'genre' => 'akció',
+      'year' => '2003',
+    );
+    $this->drupalPost('film/1', $edit, t('Save'));
+    $this->drupalGet('film');
+    $this->assertText('Hulk');
+    $this->assertNoText('Vasember');
+  }
+  
+  public function insertFilm($data) {
+    db_insert('film')
+    ->fields($data)
+    ->execute();
+  }
+  
+  function baseTestData() {
+    return array(
+      array(
+        'title' => 'Vasember',
+        'director' => 'John Favreau',
+        'genre' => 'akció',
+        'year' => '2008',
+      ),
+      array(
+        'title' => 'Thor',
+        'director' => 'Kenneth Branagh',
+        'genre' => 'akció',
+        'year' => '2011',
+      ),
+    );
+  }
+  
+  function insertTestData() {
+    foreach($this->baseTestData() as $data){
+      $this->insertFilm($data);
+    }
+  }
+}

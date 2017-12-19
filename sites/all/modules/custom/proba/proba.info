@@ -1,2 +1,4 @@
 name = Próba
 core = 7.x
+
+files[] = ProbaTestCase.test
